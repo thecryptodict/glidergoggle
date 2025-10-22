@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom PFP Generator with Goggles (Bat Symbol)</title>
+    <title>Custom PFP Generator with Goggles (Final)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <style>
         body {
@@ -114,11 +114,10 @@
         // --- Configuration ---
         const CANVAS_WIDTH = 400;
         const CANVAS_HEIGHT = 400;
-        const MINT_GREEN = '#98FB98'; // The specified lens color
+        // UPDATED: The new mint green color code.
+        const MINT_GREEN = '#D9FFD9'; 
 
-        // --- Logo Data (Simplified Bat Symbol as a Bridge) ---
-        // This path is a good approximation of the logo shape in your first image, 
-        // designed to be a central bridge.
+        // --- Logo Data (Simplified Bat Symbol) ---
         const BAT_SYMBOL_PATH = 'M 0 50 L 50 0 L 100 50 C 75 40, 25 40, 0 50 Z'; 
         
         // --- Fabric.js Setup ---
@@ -153,8 +152,8 @@
                     pfpImage.set({
                         left: (CANVAS_WIDTH - pfpImage.width * scale) / 2,
                         top: (CANVAS_HEIGHT - pfpImage.height * scale) / 2,
-                        selectable: false, // Don't allow the user to move the background
-                        evented: false     // Don't register mouse events on the background
+                        selectable: false,
+                        evented: false
                     });
 
                     canvas.add(pfpImage);
@@ -181,7 +180,7 @@
                 radius: goggleRadius,
                 fill: MINT_GREEN,
                 opacity: 0.7,
-                left: -goggleRadius * 1.5, // Position relative to the group center
+                left: -goggleRadius * 1.5,
                 top: 0,
                 originX: 'center',
                 originY: 'center',
@@ -192,47 +191,54 @@
                 radius: goggleRadius,
                 fill: MINT_GREEN,
                 opacity: 0.7,
-                left: goggleRadius * 1.5, // Position relative to the group center
+                left: goggleRadius * 1.5,
                 top: 0,
                 originX: 'center',
                 originY: 'center',
             });
 
-            // 3. The Bat Symbol Bridge
-            const batSymbol = new fabric.Path(BAT_SYMBOL_PATH, {
+            // Calculate scale to make the bat symbol fit inside a lens (60% of lens diameter)
+            const logoOriginalWidth = 100; 
+            const logoTargetWidth = goggleRadius * 2 * 0.6; 
+            const logoScale = logoTargetWidth / logoOriginalWidth;
+
+
+            // 3. Left Bat Symbol (inside left lens)
+            const leftBatSymbol = new fabric.Path(BAT_SYMBOL_PATH, {
                 fill: logoColor,
-                // These positioning values are relative to the center of the goggle group
-                left: 0, 
-                top: 0,
+                scaleX: logoScale,
+                scaleY: logoScale,
+                left: leftLens.left,
+                top: leftLens.top,
                 originX: 'center',
                 originY: 'center',
             });
-            
-            // Calculate scale to make the bat symbol fit as a bridge between the lenses
-            // The distance between the lens centers is 3 * goggleRadius = 150. 
-            // The path's original width is 100. We scale it up slightly.
-            const scaleFactor = (goggleRadius * 0.7) / 100;
 
-            batSymbol.set({
-                scaleX: scaleFactor,
-                scaleY: scaleFactor,
-                top: 0, // Position it centrally on the y-axis
-                left: 0, // Position it centrally on the x-axis (between the two lenses)
+            // 4. Right Bat Symbol (inside right lens)
+            const rightBatSymbol = new fabric.Path(BAT_SYMBOL_PATH, {
+                fill: logoColor,
+                scaleX: logoScale,
+                scaleY: logoScale,
+                left: rightLens.left,
+                top: rightLens.top,
+                originX: 'center',
+                originY: 'center',
             });
 
-            // Create a Group to treat the lenses and logo as a single, draggable, and resizable object
-            const gogglesGroup = new fabric.Group([leftLens, rightLens, batSymbol], {
-                left: CANVAS_WIDTH / 2,  // Start in the center of the canvas
+
+            // Create a Group of all objects
+            const gogglesGroup = new fabric.Group([leftLens, rightLens, leftBatSymbol, rightBatSymbol], {
+                left: CANVAS_WIDTH / 2,
                 top: CANVAS_HEIGHT / 2,
-                hasControls: true,       // Show controls for resizing and rotation
+                hasControls: true,
                 hasBorders: true,
-                lockRotation: true,      // Lock rotation
+                lockRotation: true,
                 cornerSize: 10,
                 padding: 10,
             });
 
             canvas.add(gogglesGroup);
-            canvas.setActiveObject(gogglesGroup); // Select it immediately
+            canvas.setActiveObject(gogglesGroup);
             canvas.renderAll();
         }
 
