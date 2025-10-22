@@ -114,17 +114,14 @@
         // --- Configuration ---
         const CANVAS_WIDTH = 400;
         const CANVAS_HEIGHT = 400;
-        const MINT_GREEN = '#98FB98'; // The specified color
+        const MINT_GREEN = '#98FB98'; // The specified lens color
 
-        // --- Logo Data (Replaced with a placeholder/simplified shape) ---
-        // NOTE: Fabric.js works best with images. I've created an SVG-like path
-        // for the logo you provided to draw it directly on the canvas, as
-        // using the uploaded image directly in JavaScript is complex.
-        const LOGO_PATH = 'M 0 0 L 100 0 L 50 50 Z'; // A simple inverted V-shape approximation for demonstration.
-        // For the *actual* logo shape, you would typically need a more complex SVG path or an image.
-        // Given the constraints of the request, I'll simplify the "goggles" to be two mint-green circles
-        // with the simple V-shape *between* them, which is a common goggle structure.
-
+        // --- Logo Data (The SVG Path Data) ---
+        // Fabric.js accepts the 'd' attribute of an SVG path directly.
+        // We use two paths to match your SVG structure.
+        const LOGO_PATH_1 = 'M77.0818 6.33333V2.77778H84.4398C86.2572 2.77778 86.8112 3.62222 86.8112 4.55556C86.8112 5.6 86.2572 6.33333 84.4398 6.33333H77.0818ZM74.4223 15.7778H77.0818V8.84444L87.055 15.7778H91.1994L81.2927 8.88889H84.5728C88.3626 8.88889 89.4707 6.93333 89.4707 4.55556C89.4707 2.17778 88.3626 0.222222 84.5728 0.222222H74.4223V15.7778ZM58.7754 15.7778H72.2947V13.2222H61.435V9.22222H71.8736V6.77778H61.435V2.77778H72.206V0.222222H58.7754V15.7778ZM43.3502 2.77778H48.913C52.1045 2.77778 54.3207 4.15556 54.3207 8C54.3207 11.8444 52.1045 13.2222 48.913 13.2222H43.3502V2.77778ZM40.6907 15.7778H48.913C53.6559 15.7778 56.9803 13.7333 56.9803 8C56.9803 2.71111 53.6559 0.222222 48.913 0.222222H40.6907V15.7778ZM35.8149 15.7778H38.4744V0.222222H35.8149V15.7778ZM20.301 15.7778H33.5986V13.4444H22.9605V0.222222H20.301V15.7778ZM9.90672 16C12.1452 16 15.669 15.2444 18.0847 13.7556V6.8H10.1948V9.35556H15.4252V12C14.1398 12.9333 11.8792 13.4444 9.90672 13.4444C5.98392 13.4444 2.65952 11.2889 2.65952 8C2.65952 4.48889 5.98392 2.55556 9.90672 2.55556C11.7019 2.55556 14.4057 3 16.2231 4.62222V1.66667C14.583 0.6 12.0343 0 9.90672 0C4.16658 0 0 3.24444 0 8C0 12.7556 4.16658 16 9.90672 16Z';
+        const LOGO_PATH_2 = 'M113.122 14H113.121C113.096 9.72419 109.668 6.26569 105.443 6.26569C103.698 6.26569 102.09 6.85501 100.801 7.84785C102.254 5.31115 104.445 3.26163 107.075 2C108.669 3.53927 110.826 4.48429 113.202 4.48429C115.575 4.48429 117.731 3.54093 119.325 2.00404C122.027 3.30226 124.264 5.43216 125.714 8.06745C124.382 6.94249 122.669 6.26568 120.8 6.26568C116.574 6.26568 113.146 9.72418 113.122 14Z';
+        
         // --- Fabric.js Setup ---
         const canvas = new fabric.Canvas('pfpCanvas', {
             backgroundColor: '#ffffff', // Default background
@@ -146,18 +143,6 @@
                     pfpImage = img;
 
                     // Scale the image to fit the canvas while maintaining aspect ratio
-                    pfpImage.set({
-                        scaleX: CANVAS_WIDTH / pfpImage.width,
-                        scaleY: CANVAS_HEIGHT / pfpImage.height,
-                        originX: 'left',
-                        originY: 'top',
-                        left: 0,
-                        top: 0,
-                        selectable: false, // Don't allow the user to move the background
-                        evented: false     // Don't register mouse events on the background
-                    });
-
-                    // Set smaller scale if image is too large
                     const scale = Math.min(
                         CANVAS_WIDTH / pfpImage.width,
                         CANVAS_HEIGHT / pfpImage.height
@@ -169,6 +154,8 @@
                     pfpImage.set({
                         left: (CANVAS_WIDTH - pfpImage.width * scale) / 2,
                         top: (CANVAS_HEIGHT - pfpImage.height * scale) / 2,
+                        selectable: false, // Don't allow the user to move the background
+                        evented: false     // Don't register mouse events on the background
                     });
 
 
@@ -187,9 +174,9 @@
                 return;
             }
 
-            // Goggle components
+            // Goggle configuration
             const goggleRadius = 50;
-            const logoScale = 0.5;
+            const logoColor = '#000000'; // Black color for the logo
 
             // 1. Left Lens (Mint Green Circle)
             const leftLens = new fabric.Circle({
@@ -213,35 +200,50 @@
                 originY: 'center',
             });
 
-            // 3. The Logo (Inverted V-Shape)
-            // Using a simple path to represent the attached logo
-            // This path needs to be scaled and positioned to act as the bridge
-            const logo = new fabric.Path('M 0 0 L 100 0 L 50 50 Z', {
-                fill: '#000000', // Black color for the logo
-                scaleX: logoScale,
-                scaleY: logoScale,
+            // 3. The Logo (Path 1)
+            const logoPath1 = new fabric.Path(LOGO_PATH_1, {
+                fill: logoColor,
+                left: 0, 
+                top: 0,
+                originX: 'center',
+                originY: 'center',
+            });
+
+            // 4. The Logo (Path 2)
+            const logoPath2 = new fabric.Path(LOGO_PATH_2, {
+                fill: logoColor,
                 left: 0,
                 top: 0,
                 originX: 'center',
                 originY: 'center',
             });
 
+            // Group the two logo paths together for easier scaling/positioning
+            const fullLogo = new fabric.Group([logoPath1, logoPath2]);
+            
+            // Calculate a scale factor to make the logo fit the lens
+            // The logo's original width is 126px, and we want it to fit inside the lens diameter (100px)
+            const logoOriginalWidth = 126; 
+            const logoTargetWidth = goggleRadius * 2 * 0.8; // Use 80% of the lens diameter
+            const logoScale = logoTargetWidth / logoOriginalWidth;
+
+            fullLogo.set({
+                scaleX: logoScale,
+                scaleY: logoScale,
+                // Center the logo inside the left lens
+                left: leftLens.left, 
+                top: leftLens.top + 10, // Adjust vertical position slightly
+            });
+
             // Create a Group to treat the lenses and logo as a single, draggable, and resizable object
-            const gogglesGroup = new fabric.Group([leftLens, rightLens, logo], {
+            const gogglesGroup = new fabric.Group([leftLens, rightLens, fullLogo], {
                 left: CANVAS_WIDTH / 2,  // Start in the center of the canvas
                 top: CANVAS_HEIGHT / 2,
                 hasControls: true,       // Show controls for resizing and rotation
                 hasBorders: true,
-                lockRotation: true,      // Lock rotation for a better user experience
+                lockRotation: true,      // Lock rotation
                 cornerSize: 10,
                 padding: 10,
-            });
-
-            // Adjust logo position within the group so it acts as the bridge
-            logo.set({
-                top: leftLens.top + 30, // Move down a bit
-                scaleX: leftLens.radius * 0.05, // Scale to fit nicely between lenses
-                scaleY: leftLens.radius * 0.05,
             });
 
 
