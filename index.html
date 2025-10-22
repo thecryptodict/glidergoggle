@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom PFP Generator with Goggles</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        /* Container for the entire application */
+        #pfp-generator {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Area for controls and canvas */
+        #editor-area {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        /* Container for the Fabric.js canvas */
+        #canvas-container {
+            border: 1px solid #ccc;
+            background-color: #eee;
+            border-radius: 5px;
+        }
+
+        /* Side control panel styling */
+        #controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        input[type="file"] {
+            padding: 10px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="pfp-generator">
+        <h1>📸 Custom PFP Editor</h1>
+        <p>Upload your image, then drag, drop, and resize the goggles!</p>
+
+        <div id="editor-area">
+            
+            <div id="canvas-container">
+                <canvas id="pfpCanvas" width="400" height="400"></canvas>
+            </div>
+
+            <div id="controls">
+                <div class="control-group">
+                    <label for="pfp-upload">1. Upload Your Profile Picture</label>
+                    <input type="file" id="pfp-upload" accept="image/*">
+                </div>
+
+                <div class="control-group">
+                    <label>2. Customize & Adjust Goggles</label>
+                    <button onclick="addGoggles()">Add Goggles</button>
+                    <p style="font-size: 12px; margin-top: 10px;">Drag the goggles on the canvas to move, and use the corner handles to resize.</p>
+                </div>
+                
+                <div class="control-group">
+                    <label>3. Download Your Creation</label>
+                    <button onclick="downloadPFP()" id="download-btn" disabled>Download PFP</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const CANVAS_WIDTH = 400;
+        const CANVAS_HEIGHT = 400;
+        const MINT_GREEN = '#98FB98'; // The specified color
+
+        // --- Logo Data (Replaced with a placeholder/simplified shape) ---
+        // NOTE: Fabric.js works best with images. I've created an SVG-like path
+        // for the logo you provided to draw it directly on the canvas, as
+        // using the uploaded image directly in JavaScript is complex.
+        const LOGO_PATH = 'M 0 0 L 100 0 L 50 50 Z'; // A simple inverted V-shape approximation for demonstration.
+        // For the *actual* logo shape, you would typically need a more complex SVG path or an image.
+        // Given the constraints of the request, I'll simplify the "goggles" to be two mint-green circles
+        // with the simple V-shape *between* them, which is a common goggle structure.
+
+        // --- Fabric.js Setup ---
+        const canvas = new fabric.Canvas('pfpCanvas', {
+            backgroundColor: '#ffffff', // Default background
+        });
+
+        let pfpImage = null; // To hold the user's uploaded image
+
+        // --- Step 1: Handle Image Upload ---
+        document.getElementById('pfp-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                // Clear any previous objects
+                canvas.clear();
+
+                fabric.Image.fromURL(event.target.result, function(img) {
+                    pfpImage = img;
+
+                    // Scale the image to fit the canvas while maintaining aspect ratio
+                    pfpImage.set({
+                        scaleX: CANVAS_WIDTH / pfpImage.width,
+                        scaleY: CANVAS_HEIGHT / pfpImage.height,
+                        originX: 'left',
+                        originY: 'top',
+                        left: 0,
+                        top: 0,
+                        selectable: false, // Don't allow the user to move the background
+                        evented: false     // Don't register mouse events on the background
+                    });
+
+                    // Set smaller scale if image is too large
+                    const scale = Math.min(
+                        CANVAS_WIDTH / pfpImage.width,
+                        CANVAS_HEIGHT / pfpImage.height
+                    );
+                    
+                    pfpImage.scale(scale);
+
+                    // Center the image
+                    pfpImage.set({
+                        left: (CANVAS_WIDTH - pfpImage.width * scale) / 2,
+                        top: (CANVAS_HEIGHT - pfpImage.height * scale) / 2,
+                    });
+
+
+                    canvas.add(pfpImage);
+                    canvas.renderAll();
+                    document.getElementById('download-btn').disabled = false;
+                });
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // --- Step 2: Add Goggles ---
+        function addGoggles() {
+            if (!pfpImage) {
+                alert('Please upload a profile picture first!');
+                return;
+            }
+
+            // Goggle components
+            const goggleRadius = 50;
+            const logoScale = 0.5;
+
+            // 1. Left Lens (Mint Green Circle)
+            const leftLens = new fabric.Circle({
+                radius: goggleRadius,
+                fill: MINT_GREEN,
+                opacity: 0.7,
+                left: -goggleRadius * 1.5, // Position relative to the group center
+                top: -goggleRadius / 2,
+                originX: 'center',
+                originY: 'center',
+            });
+
+            // 2. Right Lens (Mint Green Circle)
+            const rightLens = new fabric.Circle({
+                radius: goggleRadius,
+                fill: MINT_GREEN,
+                opacity: 0.7,
+                left: goggleRadius * 1.5, // Position relative to the group center
+                top: -goggleRadius / 2,
+                originX: 'center',
+                originY: 'center',
+            });
+
+            // 3. The Logo (Inverted V-Shape)
+            // Using a simple path to represent the attached logo
+            // This path needs to be scaled and positioned to act as the bridge
+            const logo = new fabric.Path('M 0 0 L 100 0 L 50 50 Z', {
+                fill: '#000000', // Black color for the logo
+                scaleX: logoScale,
+                scaleY: logoScale,
+                left: 0,
+                top: 0,
+                originX: 'center',
+                originY: 'center',
+            });
+
+            // Create a Group to treat the lenses and logo as a single, draggable, and resizable object
+            const gogglesGroup = new fabric.Group([leftLens, rightLens, logo], {
+                left: CANVAS_WIDTH / 2,  // Start in the center of the canvas
+                top: CANVAS_HEIGHT / 2,
+                hasControls: true,       // Show controls for resizing and rotation
+                hasBorders: true,
+                lockRotation: true,      // Lock rotation for a better user experience
+                cornerSize: 10,
+                padding: 10,
+            });
+
+            // Adjust logo position within the group so it acts as the bridge
+            logo.set({
+                top: leftLens.top + 30, // Move down a bit
+                scaleX: leftLens.radius * 0.05, // Scale to fit nicely between lenses
+                scaleY: leftLens.radius * 0.05,
+            });
+
+
+            canvas.add(gogglesGroup);
+            canvas.setActiveObject(gogglesGroup); // Select it immediately
+            canvas.renderAll();
+        }
+
+        // --- Step 3: Download PFP ---
+        function downloadPFP() {
+            if (!pfpImage) {
+                alert('Please upload a profile picture first.');
+                return;
+            }
+
+            // De-select the goggles so the border/controls aren't in the final image
+            canvas.discardActiveObject();
+            canvas.renderAll();
+
+            // Get the image data URL
+            const dataURL = canvas.toDataURL({
+                format: 'png',
+                quality: 1.0
+            });
+
+            // Create a temporary link element and trigger the download
+            const link = document.createElement('a');
+            link.href = dataURL;
+            link.download = 'custom_pfp.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+    </script>
+</body>
+</html>
